@@ -36,6 +36,6 @@ jobs:
         run: |
           ls -la
           echo "Processing file: ${{ inputs.OUTPUT1 }}"
-          echo "file processed" >> ${{ inputs.OUTPUT1 }}
+          echo "file processed" >> ${{ inputs.OUTPUT2 }}
           chmod +x ./prueba/deploy.sh
-          bash prueba/deploy.sh "$VAR1" "$VAR2"
+          bash prueba/deploy.sh ${{ inputs.OUTPUT1 }}  ${{ inputs.OUTPUT1 }}
