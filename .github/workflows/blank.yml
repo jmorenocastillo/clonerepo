@@ -30,7 +30,4 @@ jobs:
       - name: Process file
         shell: bash
         run: |
-          echo "Processing file: ${{ inputs.OUTPUT1 }}"
-          echo "file processed" >> ${{ inputs.OUTPUT1 }}
-          chmod +x ./prueba/deploy.sh
-          bash prueba/deploy.sh "$VAR1" "$VAR2"
+          ls -la
