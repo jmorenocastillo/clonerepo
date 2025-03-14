@@ -32,14 +32,14 @@ jobs:
           echo "Scanning...${{ inputs.VAR1 }}"
           echo "Output 1: ${{ inputs.OUTPUT1 }}"
           echo "Output 2: ${{ inputs.OUTPUT2 }}"
+        
+      - name: Process file
         env:
           ENV_NAME: ${{ env.ENV_NAME }}  # Pasar variable al script
           VERSION: ${{ env.VERSION }}
-      - name: Process file
         shell: bash
         run: |
-          cd prueba/
-          ls -la
+          ls -la prueba
           echo "Processing file: ${{ inputs.OUTPUT1 }}"
           echo "file processed" >> ${{ inputs.OUTPUT2 }}
           chmod +x deploy.sh
