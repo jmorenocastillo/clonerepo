@@ -1,25 +1,15 @@
-name: Ejecutar Script Externo2
-
 on:
   workflow_call:
-  push:
-    branches:
-      - main
+    inputs:
+      run-name:
+        required: false
+        description: 'The name shown when executed'
+        default: 'Running SAST 🚀'
+        type: string
+name: SAST
+run-name: ${{ inputs.run-name }}
 jobs:
-  Checkout_Repo:
+  sast:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repositorio Principal
-        uses: actions/checkout@v4
-  Ejecutar_Script_Bash:
-    runs-on: ubuntu-latest
-    needs: Checkout_Repo
-    env:
-      VAR1: "test"
-      VAR2: "valor2"
-      GITHUB_USER: ${{ github.actor }}
-    steps:
-      - name: Ejecutar script
-        run: |
-          chmod +x repo-scripts/scripts/deploy.sh
-          repo-scripts/scripts/deploy.sh
+      - run: echo "Scanning..."
