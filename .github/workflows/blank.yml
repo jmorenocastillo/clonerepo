@@ -41,5 +41,5 @@ jobs:
           ls -la
           echo "Processing file: ${{ inputs.OUTPUT1 }}"
           echo "file processed" >> ${{ inputs.OUTPUT2 }}
-          chmod +x deploy.sh
-          bash deploy.sh
+          chmod +x /prueba/deploy.sh
+          bash  /prueba/deploy.sh
