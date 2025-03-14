@@ -23,6 +23,7 @@ jobs:
   sast:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: |
           echo "Scanning...${{ inputs.VAR1 }}"
           echo "Output 1: ${{ inputs.OUTPUT1 }}"
