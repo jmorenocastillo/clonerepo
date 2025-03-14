@@ -33,12 +33,12 @@ jobs:
           echo "Output 2: ${{ inputs.OUTPUT2 }}"
         
       - name: Process file
-        env:
-          ENV_NAME: ${{ inputs.OUTPUT1 }}"  # Pasar variable al script
-          VERSION: ${{ inputs.OUTPUT2 }}"
+        id: process-step
+        working-directory: prueba
+
         shell: bash
         run: |
-          cd prueba
+        
           echo "Processing file: ${{ inputs.OUTPUT1 }}"
           echo "file processed" >> ${{ inputs.OUTPUT2 }}
           chmod +x deploy.sh
