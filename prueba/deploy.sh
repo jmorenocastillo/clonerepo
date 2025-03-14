@@ -11,3 +11,4 @@ MAIN_VAR2=${2:-$VAR2}
 echo "Ejecutando script desde otro repo"
 echo "Variable 1 recibida: $VAR1"
 echo "Variable 2 recibida: $VAR2"
+
