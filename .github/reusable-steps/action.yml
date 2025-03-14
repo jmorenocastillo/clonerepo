@@ -25,19 +25,15 @@ outputs:
 runs:
   using: 'composite'
   steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: jmorenocastillo/clonerepo
-
-        
-      - name: Process file
-        id: process-step
-        working-directory: prueba
-
-        shell: bash
-        run: |
-        
-          echo "Processing file: ${{ inputs.OUTPUT1 }}"
-          echo "file processed" >> ${{ inputs.OUTPUT2 }}
-          chmod +x deploy.sh
-          bash  deploy.sh ${{ inputs.OUTPUT1 }} ${{ inputs.OUTPUT2 }}
+    - uses: actions/checkout@v4
+      with:
+        repository: jmorenocastillo/clonerepo       
+    - name: Process file
+      id: process-step
+      shell: bash
+      working-directory: prueba        
+      run: |        
+        echo "Processing file: ${{ inputs.OUTPUT1 }}"
+        echo "file processed" >> ${{ inputs.OUTPUT2 }}
+        chmod +x deploy.sh
+        bash  deploy.sh ${{ inputs.OUTPUT1 }} ${{ inputs.OUTPUT2 }}
