@@ -9,6 +9,14 @@ on:
         required: false
         description: 'Variable 1'
         type: string
+      OUTPUT1 :
+        required: false
+        description: 'Output 1'
+        type: string
+      OUTPUT2 :
+        required: false
+        description: 'Output 2'
+        type: string
 name: SAST
 run-name: ${{ inputs.run-name }}
 jobs:
