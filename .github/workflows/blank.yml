@@ -4,12 +4,10 @@ on:
       run-name:
         required: false
         description: 'The name shown when executed'
-        default: 'Running SAST 🚀'
         type: string
       VAR1:
         required: false
         description: 'Variable 1'
-        default: 'default value'
         type: string
 name: SAST
 run-name: ${{ inputs.run-name }}
