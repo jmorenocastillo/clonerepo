@@ -26,7 +26,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: jmorenocastillo/clonerepo
-          path: prueba
         
       - run: |
           echo "Scanning...${{ inputs.VAR1 }}"
@@ -39,7 +38,7 @@ jobs:
           VERSION: ${{ env.VERSION }}
         shell: bash
         run: |
-          ls -la prueba
+          cd prueba
           echo "Processing file: ${{ inputs.OUTPUT1 }}"
           echo "file processed" >> ${{ inputs.OUTPUT2 }}
           chmod +x deploy.sh
