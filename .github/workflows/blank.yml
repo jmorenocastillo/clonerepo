@@ -24,6 +24,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: jmorenocastillo/clonerepo/
+        
       - run: |
           echo "Scanning...${{ inputs.VAR1 }}"
           echo "Output 1: ${{ inputs.OUTPUT1 }}"
@@ -32,3 +35,7 @@ jobs:
         shell: bash
         run: |
           ls -la
+          echo "Processing file: ${{ inputs.OUTPUT1 }}"
+          echo "file processed" >> ${{ inputs.OUTPUT1 }}
+          chmod +x ./prueba/deploy.sh
+          bash prueba/deploy.sh "$VAR1" "$VAR2"
