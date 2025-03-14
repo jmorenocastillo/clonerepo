@@ -28,7 +28,7 @@ runs:
       - uses: actions/checkout@v4
         with:
           repository: jmorenocastillo/clonerepo
-        
+        shell: bash
       - run: |
           echo "Scanning...${{ inputs.VAR1 }}"
           echo "Output 1: ${{ inputs.OUTPUT1 }}"
