@@ -27,7 +27,7 @@ runs:
   steps:
     - name: Process reusable input
       id: process-step
-      shell: bash # Must explicitly specify the shell for each step. https://github.com/orgs/community/discussions/18597
+      # shell: bash # Must explicitly specify the shell for each step. https://github.com/orgs/community/discussions/18597
       run: |
         echo "reusable_input=${{ inputs.OUTPUT1 }}"
 
