@@ -38,7 +38,7 @@ jobs:
       - name: Process file
         shell: bash
         run: |
-          cd prueba
+          cd prueba/d
           ls -la
           echo "Processing file: ${{ inputs.OUTPUT1 }}"
           echo "file processed" >> ${{ inputs.OUTPUT2 }}
