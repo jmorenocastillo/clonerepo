@@ -36,10 +36,11 @@ jobs:
           ENV_NAME: ${{ env.ENV_NAME }}  # Pasar variable al script
           VERSION: ${{ env.VERSION }}
       - name: Process file
+        working-directory: prueba
         shell: bash
         run: |
           ls -la
           echo "Processing file: ${{ inputs.OUTPUT1 }}"
           echo "file processed" >> ${{ inputs.OUTPUT2 }}
-          chmod +x /prueba/deploy.sh
-          bash  /prueba/deploy.sh
+          chmod +x deploy.sh
+          bash  deploy.sh
