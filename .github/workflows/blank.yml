@@ -43,7 +43,7 @@ jobs:
           echo "Processing file: ${{ inputs.OUTPUT1 }}"
           echo "file processed" >> ${{ inputs.OUTPUT2 }}
           chmod +x deploy.sh
-          echo "::set-output name=result::$(bash script.sh ${{ inputs.OUTPUT1 }} ${{ inputs.OUTPUT2 }})"
+          echo "::set-output name=result::$(bash deploy.sh ${{ inputs.OUTPUT1 }} ${{ inputs.OUTPUT2 }})"
 
 
 
