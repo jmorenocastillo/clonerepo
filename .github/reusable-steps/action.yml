@@ -30,6 +30,7 @@ runs:
           repository: jmorenocastillo/clonerepo
         
       - run: |
+        shell: bash
           echo "Scanning...${{ inputs.VAR1 }}"
           echo "Output 1: ${{ inputs.OUTPUT1 }}"
           echo "Output 2: ${{ inputs.OUTPUT2 }}"
