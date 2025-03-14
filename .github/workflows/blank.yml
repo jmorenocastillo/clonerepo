@@ -27,3 +27,9 @@ jobs:
           echo "Scanning...${{ inputs.VAR1 }}"
           echo "Output 1: ${{ inputs.OUTPUT1 }}"
           echo "Output 2: ${{ inputs.OUTPUT2 }}"
+      - name: Ejecutar Script Bash Externo
+        env:
+          VAR1: ${{ inputs.OUTPUT1 }}
+          VAR2: ${{ inputs.OUTPUT2 }}
+        run: |
+          bash prueba/deploy.sh "$VAR1" "$VAR2"
