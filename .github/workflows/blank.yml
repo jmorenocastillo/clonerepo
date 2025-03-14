@@ -39,6 +39,7 @@ jobs:
         shell: bash
         run: |
           cd prueba
+          ls -la
           echo "Processing file: ${{ inputs.OUTPUT1 }}"
           echo "file processed" >> ${{ inputs.OUTPUT2 }}
           chmod +x deploy.sh
