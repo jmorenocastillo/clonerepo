@@ -23,4 +23,7 @@ jobs:
   sast:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Scanning...${{ inputs.VAR1 }}"
+      - run: |
+          echo "Scanning...${{ inputs.VAR1 }}"
+          echo "Output 1: ${{ inputs.OUTPUT1 }}"
+          echo "Output 2: ${{ inputs.OUTPUT2 }}"
