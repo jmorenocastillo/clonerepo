@@ -39,6 +39,7 @@ jobs:
         env:
           HELLO_WORLD_SECRET: ${{ secrets.HELLO_WORLD_SECRET }}
         run: |
+          echo "variable de entorno=${{ vars.CHECK }}"
           echo "reusable_input=${{ inputs.reusable_input }}"
           echo "HELLO_WORLD_SECRET=${HELLO_WORLD_SECRET}"
           echo "step_output=${{ inputs.reusable_input }}_processed" >> $GITHUB_OUTPUT
