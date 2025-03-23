@@ -22,7 +22,7 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Process reusable input
+    - name: Process reusable input2
       id: process-step
       shell: bash # Must explicitly specify the shell for each step.
       run: |
