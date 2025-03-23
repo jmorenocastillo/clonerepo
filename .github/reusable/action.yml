@@ -18,14 +18,16 @@ outputs:
   reusable_output:
     description: 'Output from the reusable workflow'
     value: ${{ steps.process-step.outputs.step_output }}
-
+env: 
+  jmc: ${{ vars.variable1 }}
+  HELLO_WORLD_SECRET: TERCES_DLROW_OLLEH
 runs:
   using: 'composite'
   steps:
     - name: Process reusable input2
       shell: bash # Must explicitly specify the shell for each step.
       run: |
-        echo "pruebaaaaaaa${{ vars.variable1 }}"
+        echo "pruebaaaaaaa {{ env.jmc }}"
     - name: Process reusable input
       id: process-step
       shell: bash # Must explicitly specify the shell for each step. https://github.com/orgs/community/discussions/18597
