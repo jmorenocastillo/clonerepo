@@ -25,7 +25,7 @@ runs:
     - name: Process reusable input2
       shell: bash # Must explicitly specify the shell for each step.
       run: |
-        echo "pruebaaaaaaaaaaaaaaaaaaaaaaaaa"
+        echo "pruebaaaaaaa${{ vars.variable1 }}"
     - name: Process reusable input
       id: process-step
       shell: bash # Must explicitly specify the shell for each step. https://github.com/orgs/community/discussions/18597
