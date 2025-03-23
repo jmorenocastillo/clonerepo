@@ -26,7 +26,8 @@ on:
 defaults:
   run:
     shell: bash
-
+env:
+  CHECK: ${{ vars.CHECK }}
 jobs:
   reusable-workflow-job:
     runs-on: ubuntu-20.04
@@ -40,6 +41,7 @@ jobs:
           HELLO_WORLD_SECRET: ${{ secrets.HELLO_WORLD_SECRET }}
         run: |
           echo "variable de entorno=${{ vars.CHECK }}"
+          echo "variable de entorno=${{ env.CHECK }}"
           echo "reusable_input=${{ inputs.reusable_input }}"
           echo "HELLO_WORLD_SECRET=${HELLO_WORLD_SECRET}"
           echo "step_output=${{ inputs.reusable_input }}_processed" >> $GITHUB_OUTPUT
