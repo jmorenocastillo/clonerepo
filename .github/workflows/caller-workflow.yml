@@ -1,0 +1,30 @@
+name: Caller Workflow
+on:
+  workflow_dispatch:
+jobs:
+  prepare-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Crear archivo de configuración
+        run: |
+          echo '{
+            "param1": "value1",
+            "param2": "value2",
+            "param3": "value3",
+            "param4": "value4",
+            "param5": "value5",
+            "param6": "value6",
+            "param7": "value7",
+            "param8": "value8",
+            "param9": "value9",
+            "param10": "value10",
+            "param11": "value11"
+          }' > config.json
+      - name: Subir artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: config-file
+          path: config.json
+  call-reusable-workflow:
+    needs: prepare-config
+    uses: ./.github/workflows/reusable-workflow.yml
