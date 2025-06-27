@@ -212,6 +212,15 @@ async def apply_acls_to_path(row, service_clients, graph_client, backup_file):
     except Exception as e:
         logging.error(f"Error processing ACLs for {path}: {str(e)}")
 
+def run_async_task(coro):
+    """Helper function to run an async coroutine in a new event loop."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
 async def process_csv(csv_file_path, max_workers=4):
     """Process CSV file and apply ACLs to Azure Data Lake using multithreading."""
     # Initialize GraphClient with async credential
@@ -240,8 +249,15 @@ async def process_csv(csv_file_path, max_workers=4):
     # Process rows using ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         loop = asyncio.get_event_loop()
-        tasks = [loop.create_task(apply_acls_to_path(row, service_clients, graph_client, backup_file)) for row in rows]
-        await asyncio.gather(*tasks, return_exceptions=True)
+        futures = [
+            executor.submit(run_async_task, apply_acls_to_path(row, service_clients, graph_client, backup_file))
+            for row in rows
+        ]
+        for future in as_completed(futures):
+            try:
+                future.result()  # Wait for each thread to complete
+            except Exception as e:
+                logging.error(f"Error in thread: {str(e)}")
 
 if __name__ == "__main__":
     import sys
