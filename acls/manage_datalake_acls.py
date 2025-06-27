@@ -2,7 +2,7 @@ import csv
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from azure.identity import ClientSecretCredential
-from azure.identity.aio import ClientSecretCredential as ClientSecretCredentialAsync
+from azure.identity.aio import ClientSecretCredentialAsync
 from azure.storage.filedatalake import DataLakeServiceClient
 from azure.core.exceptions import ResourceNotFoundError
 from msgraph.core import GraphClient
@@ -22,20 +22,21 @@ if not all([client_id, client_secret, tenant_id]):
     logging.error("Missing required environment variables: AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID")
     raise ValueError("Missing required environment variables for Service Principal authentication")
 
-def get_azure_ad_group_object_id(group_name, graph_client):
+async def get_azure_ad_group_object_id(group_name, graph_client):
     """Retrieve Azure AD group object ID by display name using Microsoft Graph."""
     try:
-        result = graph_client.groups.get().filter(f"displayName eq '{group_name}'").select('id').get()
-        groups = result.value
+        response = await graph_client.get(f"/v1.0/groups?$filter=displayName eq '{group_name}'&$select=id")
+        response.raise_for_status()
+        groups = response.json().get('value', [])
         if groups and len(groups) > 0:
-            return groups[0].id
+            return groups[0]['id']
         logging.error(f"Group {group_name} not found in Azure AD.")
         return None
     except Exception as e:
         logging.error(f"Error retrieving group {group_name}: {str(e)}")
         return None
 
-def get_environment_group(environment, graph_client):
+async def get_environment_group(environment, graph_client):
     """Map environment to corresponding Azure AD group object ID."""
     env_groups = {
         'dev': 'grupo_dev',
@@ -43,7 +44,7 @@ def get_environment_group(environment, graph_client):
         'pro': 'grupo_pro'
     }
     group_name = env_groups.get(environment.lower(), 'grupo_dev')
-    return get_azure_ad_group_object_id(group_name, graph_client)
+    return await get_azure_ad_group_object_id(group_name, graph_client)
 
 def parse_permission(permission):
     """Convert permission shorthand to ACL format."""
@@ -113,7 +114,7 @@ async def apply_acls_to_path(row, service_clients, graph_client, backup_file):
             return
 
     # Convert group_name to object ID
-    group_object_id = get_azure_ad_group_object_id(group_name, graph_client)
+    group_object_id = await get_azure_ad_group_object_id(group_name, graph_client)
     if not group_object_id:
         logging.error(f"Skipping {path}: Invalid group object ID for group_name={group_name}")
         return
@@ -123,7 +124,7 @@ async def apply_acls_to_path(row, service_clients, graph_client, backup_file):
     container_name = path_parts[0] if path_parts else 'data'
     relative_path = '/'.join(path_parts[1:]) if len(path_parts) > 1 else ''  # Path without container
     acl_permission = parse_permission(permission)
-    env_group_object_id = get_environment_group(environment, graph_client)
+    env_group_object_id = await get_environment_group(environment, graph_client)
 
     if not env_group_object_id:
         logging.error(f"Skipping {path}: Invalid group object ID for environment={environment}")
