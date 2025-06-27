@@ -215,7 +215,7 @@ async def apply_acls_to_path(row, service_clients, graph_client, backup_file):
 async def process_csv(csv_file_path, max_workers=4):
     """Process CSV file and apply ACLs to Azure Data Lake using multithreading."""
     # Initialize GraphClient with async credential
-    credential = await ClientSecretCredentialAsync(tenant_id, client_id, client_secret)
+    credential = ClientSecretCredentialAsync(tenant_id, client_id, client_secret)
     graph_client = GraphClient(credential=credential)
 
     # Dictionary to store DataLakeServiceClient instances
@@ -241,7 +241,7 @@ async def process_csv(csv_file_path, max_workers=4):
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         loop = asyncio.get_event_loop()
         tasks = [loop.create_task(apply_acls_to_path(row, service_clients, graph_client, backup_file)) for row in rows]
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 if __name__ == "__main__":
     import sys
