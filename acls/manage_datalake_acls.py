@@ -215,7 +215,7 @@ async def apply_acls_to_path(row, service_clients, graph_client, backup_file):
 async def process_csv(csv_file_path, max_workers=4):
     """Process CSV file and apply ACLs to Azure Data Lake using multithreading."""
     # Initialize GraphClient with async credential
-    credential = ClientSecretCredentialAsync(tenant_id, client_id, client_secret)
+    credential = await ClientSecretCredentialAsync(tenant_id, client_id, client_secret)
     graph_client = GraphClient(credential=credential)
 
     # Dictionary to store DataLakeServiceClient instances
