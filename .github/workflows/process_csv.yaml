@@ -1,0 +1,59 @@
+name: Process CSV Rows in Parallel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Generate matrix from CSV
+        id: generate
+        run: |
+          MATRIX=$(python -c "
+          import csv
+          import json
+          matrix = []
+          with open('data.csv', newline='') as f:
+              reader = csv.DictReader(f)
+              for row in reader:
+                  matrix.append(row)
+          print(json.dumps({'include': matrix}))
+          ")
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
+  process-rows:
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+      max-parallel: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Print row values
+        run: |
+          python -c "
+          print('Processing row:')
+          print('Column1: ${{ matrix.column1 }}')
+          print('Column2: ${{ matrix.column2 }}')
+          print('Column3: ${{ matrix.column3 }}')
+          "
