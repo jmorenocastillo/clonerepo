@@ -31,7 +31,7 @@ jobs:
       uses: trstringer/manual-approval@v1
       with:
         secret: ${{ github.TOKEN }}
-        approvers: tu-usuario-github  # ← CAMBIA POR TU USERNAME
+        approvers: jmorenocastillo  # ← CAMBIA POR TU USERNAME
         minimum-approvals: 1
         issue-title: "🚀 Aprobar Terraform Apply (Dummy)"
         issue-body: |
