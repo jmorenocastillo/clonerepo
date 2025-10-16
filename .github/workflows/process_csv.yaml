@@ -1,4 +1,4 @@
-name: Terraform Dummy - Manual Approval sin Environment
+name: Terraform Dummy - Manual Approval (Sin Environment)
 
 on:
   push:
@@ -8,30 +8,31 @@ jobs:
   terraform:
     runs-on: ubuntu-latest
     permissions:
-      issues: write  # Solo para crear el issue de aprobación (automático)
+      issues: write  # Para el issue auto
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
     
     - name: Plan
+      id: plan
       run: |
         echo "=== 🗺️ TERRAFORM PLAN (Dummy) ==="
         echo "## Plan Details" >> $GITHUB_STEP_SUMMARY
         cat << 'EOF' >> $GITHUB_STEP_SUMMARY
 
 
-    # ⏸️ PAUSA CON ACTION DE TERCEROS (SIN ENVIRONMENT)
+
+    # ⏸️ PAUSA CON TRSTRINGER (FUNCIONA 100%)
     - name: ⏸️ Manual Approval Required
       if: github.ref == 'refs/heads/main'
-      uses: pavlospt/manual-approval@v1
+      uses: trstringer/manual-approval@v1  # ← LA BUENA
       with:
         secret: ${{ github.TOKEN }}
-        approvers: |  # Lista de usuarios (tú o equipo, uno por línea)
-          jmorenocastillo
+        approvers: jmorenocastillo  # ← TU USERNAME
         minimum-approvals: 1
-        timeout-minutes: 60  # Expira en 1h si no apruebas
-        issue-title: "🚀 Aprobar Terraform Apply (Dummy - Sin Env)"
+        timeout-minutes: 60
+        issue-title: "🚀 Aprobar Terraform Apply (Dummy)"
         issue-body: |
           ## 🎭 Plan Listo para Revisar
           
