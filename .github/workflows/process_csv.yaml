@@ -1,4 +1,4 @@
-name: Terraform - JENKINS EXACTO
+name: Terraform - Plan Real + Approval UI
 
 on:
   push:
@@ -6,16 +6,58 @@ on:
 
 jobs:
   terraform:
-    environment: production  # ← BOTÓN AQUÍ
+    environment: production  # ← BOTÓN APPROVE AQUÍ
     runs-on: ubuntu-latest
     
     steps:
-    - name: Plan
-      run: |
-        echo "🗺️ PLAN: 2 recursos a crear"
-        echo "## Plan" >> $GITHUB_STEP_SUMMARY
-        echo "- Server: web-01" >> $GITHUB_STEP_SUMMARY
-        echo "- DB: db-01" >> $GITHUB_STEP_SUMMARY
+    - name: Checkout
+      uses: actions/checkout@v4
     
-    - name: Apply
-      run: echo "✅ APPLY COMPLETED!"
+    - name: Terraform Plan (SIMULADO)
+      id: plan
+      run: |
+        echo "=== 🗺️ TERRAFORM PLAN ===" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        cat << 'EOF' >> $GITHUB_STEP_SUMMARY
+**Terraform used the selected providers to generate the following execution plan.**
+
+# aws_instance.web will be created
++ resource "aws_instance" "web" {
+    + ami           = "ami-0abcdef1234567890"
+    + instance_type = "t3.micro"
+    + tags = {
+        + Name = "web-server-01"
+      }
+  }
+
+# aws_s3_bucket.static will be created
++ resource "aws_s3_bucket" "static" {
+    + bucket = "my-static-site-20251016"
+  }
+
+# aws_db_instance.app will be *MODIFIED*
+resource "aws_db_instance" "app" {
+    ~ allocated_storage = 20 -> 50  # ← +30GB
+    ~ instance_class    = "db.t3.micro" -> "db.t3.small"  # ← Upgrade
+  }
+
+# aws_security_group.old will be *DESTROYED*
+- resource "aws_security_group" "old" {
+    - id = "sg-0123456789abcdef0"
+  }
+
+**Plan: 2 to add, 1 to change, 1 to destroy.**
+EOF
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**👇 REVISA EL PLAN ARRIBA 👆 y decide si APPROVE**" >> $GITHUB_STEP_SUMMARY
+        echo "---" >> $GITHUB_STEP_SUMMARY
+    
+    # ⏸️ PAUSA - BOTÓN APARECE AQUÍ
+    # ^^^ GitHub PAUSA AUTOMÁTICO
+    
+    - name: Terraform Apply
+      run: |
+        echo "=== ✅ TERRAFORM APPLY COMPLETED ===" >> $GITHUB_STEP_SUMMARY
+        cat << 'EOF' >> $GITHUB_STEP
