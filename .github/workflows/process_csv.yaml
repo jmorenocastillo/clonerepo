@@ -1,59 +1,43 @@
-name: Process CSV Rows in Parallel
+name: Terraform Dummy - Manual Approval (Jenkins Style)
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  generate-matrix:
+  terraform:
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.generate.outputs.matrix }}
+    permissions:
+      issues: write  # Para crear/actualizar el issue de aprobación
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Plan
+      id: plan
+      run: |
+        echo "=== 🗺️ TERRAFORM PLAN (Dummy) ==="
+        echo "## Plan Details" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        cat << 'EOF' >> $GITHUB_STEP_SUMMARY
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
 
-      - name: Generate matrix from CSV
-        id: generate
-        run: |
-          MATRIX=$(python -c "
-          import csv
-          import json
-          matrix = []
-          with open('data.csv', newline='') as f:
-              reader = csv.DictReader(f)
-              for row in reader:
-                  matrix.append(row)
-          print(json.dumps({'include': matrix}))
-          ")
-          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
-  process-rows:
-    needs: generate-matrix
-    runs-on: ubuntu-latest
-    strategy:
-      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
-      max-parallel: 10
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: Print row values
-        run: |
-          python -c "
-          print('Processing row:')
-          print('Column1: ${{ matrix.column1 }}')
-          print('Column2: ${{ matrix.column2 }}')
-          print('Column3: ${{ matrix.column3 }}')
-          "
+    # ⏸️ PAUSA REAL - SE CONGELA HASTA APPROVE
+    - name: ⏸️ Manual Approval Required
+      if: github.ref == 'refs/heads/main'
+      uses: trstringer/manual-approval@v1
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: tu-usuario-github  # ← CAMBIA POR TU USERNAME
+        minimum-approvals: 1
+        issue-title: "🚀 Aprobar Terraform Apply (Dummy)"
+        issue-body: |
+          ## 🎭 Plan Listo para Revisar
+          
+          **Commit:** `${{ github.sha }}`
+          **Run:** [Ver Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          ### 📋 Detalles del Plan:
