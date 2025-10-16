@@ -1,4 +1,4 @@
-name: Terraform Dummy - APPROVE EN UI
+name: Terraform Dummy - Manual Approval sin Environment
 
 on:
   push:
@@ -6,9 +6,9 @@ on:
 
 jobs:
   terraform:
-    # ⏸️ PAUSA AUTOMÁTICA CON BOTÓN AQUÍ
-    environment: production
     runs-on: ubuntu-latest
+    permissions:
+      issues: write  # Solo para crear el issue de aprobación (automático)
     
     steps:
     - name: Checkout
@@ -16,15 +16,26 @@ jobs:
     
     - name: Plan
       run: |
-        echo "=== 🗺️ TERRAFORM PLAN ==="
-        echo "## Plan" >> $GITHUB_STEP_SUMMARY
-        echo "- Server: web-01 (CREATE)" >> $GITHUB_STEP_SUMMARY
-        echo "- DB: db-01 (CREATE)" >> $GITHUB_STEP_SUMMARY
-        echo "**2 recursos a crear**" >> $GITHUB_STEP_SUMMARY
-    
-    # ⏸️ SE CONGELA AQUÍ - BOTÓN APARECE AUTOMÁTICO
-    
-    - name: Apply
-      run: |
-        echo "=== ✅ APPLY COMPLETED ==="
-        echo "**Production Deployed!** 🎉"
+        echo "=== 🗺️ TERRAFORM PLAN (Dummy) ==="
+        echo "## Plan Details" >> $GITHUB_STEP_SUMMARY
+        cat << 'EOF' >> $GITHUB_STEP_SUMMARY
+
+
+    # ⏸️ PAUSA CON ACTION DE TERCEROS (SIN ENVIRONMENT)
+    - name: ⏸️ Manual Approval Required
+      if: github.ref == 'refs/heads/main'
+      uses: pavlospt/manual-approval@v1
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: |  # Lista de usuarios (tú o equipo, uno por línea)
+          jmorenocastillo
+        minimum-approvals: 1
+        timeout-minutes: 60  # Expira en 1h si no apruebas
+        issue-title: "🚀 Aprobar Terraform Apply (Dummy - Sin Env)"
+        issue-body: |
+          ## 🎭 Plan Listo para Revisar
+          
+          **Commit:** `${{ github.sha }}`
+          **Run:** [Ver Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          ### 📋 Detalles del Plan:
