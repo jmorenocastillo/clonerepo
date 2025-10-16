@@ -1,4 +1,4 @@
-name: Terraform Dummy - Manual Approval (Jenkins Style)
+name: Terraform Dummy - APPROVE EN UI
 
 on:
   push:
@@ -6,38 +6,25 @@ on:
 
 jobs:
   terraform:
+    # ⏸️ PAUSA AUTOMÁTICA CON BOTÓN AQUÍ
+    environment: production
     runs-on: ubuntu-latest
-    permissions:
-      issues: write  # Para crear/actualizar el issue de aprobación
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
     
     - name: Plan
-      id: plan
       run: |
-        echo "=== 🗺️ TERRAFORM PLAN (Dummy) ==="
-        echo "## Plan Details" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        cat << 'EOF' >> $GITHUB_STEP_SUMMARY
-
-
-
-
-    # ⏸️ PAUSA REAL - SE CONGELA HASTA APPROVE
-    - name: ⏸️ Manual Approval Required
-      if: github.ref == 'refs/heads/main'
-      uses: trstringer/manual-approval@v1
-      with:
-        secret: ${{ github.TOKEN }}
-        approvers: jmorenocastillo  # ← CAMBIA POR TU USERNAME
-        minimum-approvals: 1
-        issue-title: "🚀 Aprobar Terraform Apply (Dummy)"
-        issue-body: |
-          ## 🎭 Plan Listo para Revisar
-          
-          **Commit:** `${{ github.sha }}`
-          **Run:** [Ver Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          
-          ### 📋 Detalles del Plan:
+        echo "=== 🗺️ TERRAFORM PLAN ==="
+        echo "## Plan" >> $GITHUB_STEP_SUMMARY
+        echo "- Server: web-01 (CREATE)" >> $GITHUB_STEP_SUMMARY
+        echo "- DB: db-01 (CREATE)" >> $GITHUB_STEP_SUMMARY
+        echo "**2 recursos a crear**" >> $GITHUB_STEP_SUMMARY
+    
+    # ⏸️ SE CONGELA AQUÍ - BOTÓN APARECE AUTOMÁTICO
+    
+    - name: Apply
+      run: |
+        echo "=== ✅ APPLY COMPLETED ==="
+        echo "**Production Deployed!** 🎉"
