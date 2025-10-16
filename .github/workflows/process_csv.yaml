@@ -6,7 +6,7 @@ on:
 
 jobs:
   terraform:
-    environment: production  # ← BOTÓN APPROVE AQUÍ
+    environment: production
     runs-on: ubuntu-latest
     
     steps:
@@ -14,50 +14,49 @@ jobs:
       uses: actions/checkout@v4
     
     - name: Terraform Plan (SIMULADO)
-      id: plan
       run: |
         echo "=== 🗺️ TERRAFORM PLAN ===" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
-        cat << 'EOF' >> $GITHUB_STEP_SUMMARY
-**Terraform used the selected providers to generate the following execution plan.**
-
-# aws_instance.web will be created
-+ resource "aws_instance" "web" {
-    + ami           = "ami-0abcdef1234567890"
-    + instance_type = "t3.micro"
-    + tags = {
-        + Name = "web-server-01"
-      }
-  }
-
-# aws_s3_bucket.static will be created
-+ resource "aws_s3_bucket" "static" {
-    + bucket = "my-static-site-20251016"
-  }
-
-# aws_db_instance.app will be *MODIFIED*
-resource "aws_db_instance" "app" {
-    ~ allocated_storage = 20 -> 50  # ← +30GB
-    ~ instance_class    = "db.t3.micro" -> "db.t3.small"  # ← Upgrade
-  }
-
-# aws_security_group.old will be *DESTROYED*
-- resource "aws_security_group" "old" {
-    - id = "sg-0123456789abcdef0"
-  }
-
-**Plan: 2 to add, 1 to change, 1 to destroy.**
-EOF
-
+        echo "**Terraform used the selected providers to generate the following execution plan.**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# aws_instance.web will be created" >> $GITHUB_STEP_SUMMARY
+        echo "+ resource \"aws_instance\" \"web\" {" >> $GITHUB_STEP_SUMMARY
+        echo "    + ami           = \"ami-0abcdef1234567890\"" >> $GITHUB_STEP_SUMMARY
+        echo "    + instance_type = \"t3.micro\"" >> $GITHUB_STEP_SUMMARY
+        echo "    + tags = {" >> $GITHUB_STEP_SUMMARY
+        echo "        + Name = \"web-server-01\"" >> $GITHUB_STEP_SUMMARY
+        echo "      }" >> $GITHUB_STEP_SUMMARY
+        echo "  }" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# aws_s3_bucket.static will be created" >> $GITHUB_STEP_SUMMARY
+        echo "+ resource \"aws_s3_bucket\" \"static\" {" >> $GITHUB_STEP_SUMMARY
+        echo "    + bucket = \"my-static-site-20251016\"" >> $GITHUB_STEP_SUMMARY
+        echo "  }" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# aws_db_instance.app will be *MODIFIED*" >> $GITHUB_STEP_SUMMARY
+        echo "resource \"aws_db_instance\" \"app\" {" >> $GITHUB_STEP_SUMMARY
+        echo "    ~ allocated_storage = 20 -> 50  # ← +30GB" >> $GITHUB_STEP_SUMMARY
+        echo "    ~ instance_class    = \"db.t3.micro\" -> \"db.t3.small\"  # ← Upgrade" >> $GITHUB_STEP_SUMMARY
+        echo "  }" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# aws_security_group.old will be *DESTROYED*" >> $GITHUB_STEP_SUMMARY
+        echo "- resource \"aws_security_group\" \"old\" {" >> $GITHUB_STEP_SUMMARY
+        echo "    - id = \"sg-0123456789abcdef0\"" >> $GITHUB_STEP_SUMMARY
+        echo "  }" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Plan: 2 to add, 1 to change, 1 to destroy.**" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**👇 REVISA EL PLAN ARRIBA 👆 y decide si APPROVE**" >> $GITHUB_STEP_SUMMARY
         echo "---" >> $GITHUB_STEP_SUMMARY
     
-    # ⏸️ PAUSA - BOTÓN APARECE AQUÍ
-    # ^^^ GitHub PAUSA AUTOMÁTICO
-    
     - name: Terraform Apply
       run: |
         echo "=== ✅ TERRAFORM APPLY COMPLETED ===" >> $GITHUB_STEP_SUMMARY
-        cat << 'EOF' >> $GITHUB_STEP
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**✨ DEPLOY EXITOSO A PRODUCTION!**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Cambios Aplicados:" >> $GITHUB_STEP_SUMMARY
+        echo "| Acción | Recurso | Detalles |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|---------|----------|" >> $GITHUB_STEP_SUMMARY
+        echo "| **CREADO** | aws_instance.web | t3.micro • web-server-01 |" >> $GITHUB_STEP_SUMMARY
+        echo "
