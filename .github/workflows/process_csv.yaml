@@ -1,4 +1,4 @@
-name: Terraform Dummy - Manual Approval (Sin Environment)
+name: Terraform - JENKINS EXACTO
 
 on:
   push:
@@ -6,37 +6,16 @@ on:
 
 jobs:
   terraform:
+    environment: production  # ← BOTÓN AQUÍ
     runs-on: ubuntu-latest
-    permissions:
-      issues: write  # Para el issue auto
     
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    
     - name: Plan
-      id: plan
       run: |
-        echo "=== 🗺️ TERRAFORM PLAN (Dummy) ==="
-        echo "## Plan Details" >> $GITHUB_STEP_SUMMARY
-        cat << 'EOF' >> $GITHUB_STEP_SUMMARY
-
-
-
-    # ⏸️ PAUSA CON TRSTRINGER (FUNCIONA 100%)
-    - name: ⏸️ Manual Approval Required
-      if: github.ref == 'refs/heads/main'
-      uses: trstringer/manual-approval@v1  # ← LA BUENA
-      with:
-        secret: ${{ github.TOKEN }}
-        approvers: jmorenocastillo  # ← TU USERNAME
-        minimum-approvals: 1
-        timeout-minutes: 60
-        issue-title: "🚀 Aprobar Terraform Apply (Dummy)"
-        issue-body: |
-          ## 🎭 Plan Listo para Revisar
-          
-          **Commit:** `${{ github.sha }}`
-          **Run:** [Ver Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          
-          ### 📋 Detalles del Plan:
+        echo "🗺️ PLAN: 2 recursos a crear"
+        echo "## Plan" >> $GITHUB_STEP_SUMMARY
+        echo "- Server: web-01" >> $GITHUB_STEP_SUMMARY
+        echo "- DB: db-01" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Apply
+      run: echo "✅ APPLY COMPLETED!"
