@@ -1,19 +1,21 @@
-name: Terraform - Plan + ENVIRONMENT STEP + Apply
+name: Terraform - PLAN → APPROVE → APPLY
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  terraform:
-    environment: production  # ← BOTÓN EN EL STEP
+  # JOB 1: PLAN (SE VE ANTES DE APROBAR)
+  plan:
     runs-on: ubuntu-latest
+    outputs:
+      plan-complete: true
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
     
-    - name: Terraform Plan (VISIBLE PRIMERO)
+    - name: Terraform Plan (VISIBLE)
       run: |
         echo "=============================================="
         echo "🗺️  TERRAFORM PLAN - REVISA ANTES DE APROBAR"
@@ -46,12 +48,22 @@ jobs:
         echo "**Plan: 2 to add, 1 to change, 1 to destroy**"
         echo "=============================================="
         echo ""
-        echo "⏳ SIGUIENTE STEP: Click APPROVE para Apply"
-    
-    # ⏸️ PAUSA ENVIRONMENT EN ESTE STEP
-    - name: ⏸️ APPROVAL REQUIRED
-      run: echo "PLAN COMPLETADO ✓ - Click APPROVE abajo"
-    
+        echo "👇 COPIA ESTE PLAN Y REVÍSALO EN EL SIGUIENTE JOB 👇"
+
+  # JOB 2: APPROVAL (PAUSA AQUÍ - PLAN YA VISIBLE)
+  approval:
+    needs: plan  # ← ESPERA AL PLAN
+    environment: production  # ← BOTÓN AQUÍ
+    runs-on: ubuntu-latest
+    steps:
+    - name: ⏸️ REVISA EL PLAN DE ARRIBA Y APRUEBA
+      run: echo "PLAN COMPLETADO ✓ - Click APPROVE para continuar"
+
+  # JOB 3: APPLY (SÓLO SI APPROVES)
+  apply:
+    needs: [plan, approval]  # ← ESPERA APROBACIÓN
+    runs-on: ubuntu-latest
+    steps:
     - name: Terraform Apply
       run: |
         echo "=============================================="
