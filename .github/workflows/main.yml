@@ -1,40 +1,37 @@
-name: Main Workflow - Dinámico
+name: Main con nombre dinámico
 
 on: [push]
 
 jobs:
-  job1:
+  # Paso 1: Generar nombre
+  prepare-job1:
     runs-on: ubuntu-latest
+    outputs:
+      job_name: ${{ steps.set.outputs.job_name }}
     steps:
-      - name: Set job name
-        id: name
-        run: echo "job_name=${{ github.job }}" >> $GITHUB_OUTPUT
+      - name: Set name
+        id: set
+        run: echo "job_name=job1" >> $GITHUB_OUTPUT
 
-    # Llama al workflow reutilizable
+  # Paso 2: Llamar reusable
+  call-job1:
+    needs: prepare-job1
     uses: ./.github/workflows/reusable.yml
     with:
-      caller_job: ${{ steps.name.outputs.job_name }}
+      caller_job: ${{ needs.prepare-job1.outputs.job_name }}
 
-  job2:
-    needs: job1
+  # Repite para job2, job3...
+  prepare-job2:
+    needs: call-job1
     runs-on: ubuntu-latest
+    outputs:
+      job_name: ${{ steps.set.outputs.job_name }}
     steps:
-      - name: Set job name
-        id: name
-        run: echo "job_name=${{ github.job }}" >> $GITHUB_OUTPUT
+      - id: set
+        run: echo "job_name=job2" >> $GITHUB_OUTPUT
 
+  call-job2:
+    needs: prepare-job2
     uses: ./.github/workflows/reusable.yml
     with:
-      caller_job: ${{ steps.name.outputs.job_name }}
-
-  job3:
-    needs: job2
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set job name
-        id: name
-        run: echo "job_name=${{ github.job }}" >> $GITHUB_OUTPUT
-
-    uses: ./.github/workflows/reusable.yml
-    with:
-      caller_job: ${{ steps.name.outputs.job_name }}
+      caller_job: ${{ needs.prepare-job2.outputs.job_name }}
