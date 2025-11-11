@@ -1,5 +1,4 @@
-# .github/workflows/main.yml
-name: Main Workflow con github.job
+name: Main Workflow - Nombre Dinámico
 
 on:
   push:
@@ -7,18 +6,39 @@ on:
 
 jobs:
   job1:
-    uses: ./.github/workflows/reusable.yml
-    with:
-      caller_job: ${{ github.job }}  # ← ¡Automático! Pasa "job1"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generar nombre del job
+        id: set_name
+        run: echo "job_name=${{ github.job }}" >> $GITHUB_OUTPUT
 
-  qq:
+      - name: Llamar reusable con nombre dinámico
+        uses: ./.github/workflows/reusable.yml
+        with:
+          caller_job: ${{ steps.set_name.outputs.job_name }}
+
+  job2:
     needs: job1
-    uses: ./.github/workflows/reusable.yml
-    with:
-      caller_job: ${{ github.job }}  # ← Pasa "job2"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generar nombre del job
+        id: set_name
+        run: echo "job_name=${{ github.job }}" >> $GITHUB_OUTPUT
+
+      - name: Llamar reusable con nombre dinámico
+        uses: ./.github/workflows/reusable.yml
+        with:
+          caller_job: ${{ steps.set_name.outputs.job_name }}
 
   job3:
-    needs: qq
-    uses: ./.github/workflows/reusable.yml
-    with:
-      caller_job: ${{ github.job }}  # ← Pasa "job3"
+    needs: job2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generar nombre del job
+        id: set_name
+        run: echo "job_name=${{ github.job }}" >> $GITHUB_OUTPUT
+
+      - name: Llamar reusable con nombre dinámico
+        uses: ./.github/workflows/reusable.yml
+        with:
+          caller_job: ${{ steps.set_name.outputs.job_name }}
