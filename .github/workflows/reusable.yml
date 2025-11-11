@@ -1,10 +1,11 @@
-# Este es un WORKFLOW REUTILIZABLE
+# .github/workflows/reusable.yml
 name: Reusable Workflow
 
 on:
   workflow_call:
     inputs:
       caller_job:
+        description: 'Nombre del job que me invocó'
         type: string
         required: true
 
@@ -12,5 +13,7 @@ jobs:
   execute:
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          echo "This is executed by the caller job: ${{ inputs.caller_job }}"
+      - name: Mostrar quién me llamó
+        run: |
+          echo "Fui invocado por: ${{ inputs.caller_job }}"
+          echo "Ejecutado en: $(date)"

@@ -1,21 +1,24 @@
-name: Main Workflow
+# .github/workflows/main.yml
+name: Main Workflow con github.job
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
 
 jobs:
   job1:
-    uses: ./.github/workflows/reusable.yml  # Correcto
+    uses: ./.github/workflows/reusable.yml
     with:
-      caller_job: job1
+      caller_job: ${{ github.job }}  # ← ¡Automático! Pasa "job1"
 
-  qqqqqqqqqqqqqqq:
+  job2:
     needs: job1
-    uses: ./.github/workflows/reusable.yml  # Correcto
+    uses: ./.github/workflows/reusable.yml
     with:
-      caller_job: job2
+      caller_job: ${{ github.job }}  # ← Pasa "job2"
 
   job3:
-    needs: qqqqqqqqqqqqqqq
-    uses: ./.github/workflows/reusable.yml  # Correcto
+    needs: job2
+    uses: ./.github/workflows/reusable.yml
     with:
-      caller_job: job3
+      caller_job: ${{ github.job }}  # ← Pasa "job3"
