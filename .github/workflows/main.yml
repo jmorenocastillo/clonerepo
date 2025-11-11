@@ -1,36 +1,21 @@
-# .github/workflows/main.yml
-name: Main Workflow con 3 jobs
+name: Main Workflow
 
-on:
-  push:
-    branches: [ main ]
+on: [push]
 
 jobs:
   job1:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Iniciando job1"
-      - name: Llamar a reusable desde job1
-        uses: ./.github/workflows/reusable.yml
-        with:
-          caller_job: ${{ github.job }}  # ← Automático: "job1"
+    uses: ./.github/workflows/reusable.yml  # Correcto
+    with:
+      caller_job: job1
 
   job2:
     needs: job1
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Iniciando job2"
-      - name: Llamar a reusable desde job2
-        uses: ./.github/workflows/reusable.yml
-        with:
-          caller_job: ${{ github.job }}  # ← "job2"
+    uses: ./.github/workflows/reusable.yml  # Correcto
+    with:
+      caller_job: job2
 
   job3:
     needs: job2
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Iniciando job3"
-      - name: Llamar a reusable desde job3
-        uses: ./.github/workflows/reusable.yml
-        with:
-          caller_job: ${{ github.job }}  # ← "job3"
+    uses: ./.github/workflows/reusable.yml  # Correcto
+    with:
+      caller_job: job3
