@@ -11,14 +11,14 @@ jobs:
     with:
       caller_job: ${{ github.job }}  # ← ¡Automático! Pasa "job1"
 
-  job2:
+  qq:
     needs: job1
     uses: ./.github/workflows/reusable.yml
     with:
       caller_job: ${{ github.job }}  # ← Pasa "job2"
 
   job3:
-    needs: job2
+    needs: qq
     uses: ./.github/workflows/reusable.yml
     with:
       caller_job: ${{ github.job }}  # ← Pasa "job3"
