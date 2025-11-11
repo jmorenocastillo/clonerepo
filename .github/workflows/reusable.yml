@@ -1,11 +1,9 @@
-# .github/workflows/reusable.yml
 name: Reusable Workflow
 
 on:
   workflow_call:
     inputs:
       caller_job:
-        description: 'Nombre del job que me invocó'
         type: string
         required: true
 
@@ -15,5 +13,5 @@ jobs:
     steps:
       - name: Mostrar quién me llamó
         run: |
-          echo "Fui invocado por: ${{ inputs.caller_job }}"
-          echo "Ejecutado en: $(date)"
+          echo "Invocado por: ${{ inputs.caller_job }}"
+          echo "Hora: $(date)"
