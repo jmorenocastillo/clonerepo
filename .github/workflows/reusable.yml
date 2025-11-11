@@ -12,4 +12,5 @@ jobs:
   execute:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Invocado por: ${{ inputs.caller_job }}"
+      - run: |
+          echo "This is executed by the caller job: ${{ inputs.caller_job }}"
