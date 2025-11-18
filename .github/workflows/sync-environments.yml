@@ -2,11 +2,12 @@
 name: Sync Environments ← funciona 100 %
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
     paths:
-      - '.github/workflows/deploy.yml'   # ← se ejecuta cada vez que cambies este archivo
+      - '.github/workflows/deploy.yml'  # Se ejecuta cuando cambies el deploy.yml
 
 permissions:
   contents: read
