@@ -1,86 +1,50 @@
-# .github/workflows/setup-environments-final.yml
-name: Setup Environments (100% funcional - sin errores)
+# .github/workflows/setup-environments.yml
+name: Setup Environments - Funciona 100%
 
 on:
-  workflow_dispatch
-
-permissions:
-  contents: read
-  deployments: write
-  actions: read
+  workflow_dispatch:
 
 jobs:
-  create:
+  setup:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+      actions: read
+
     env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}   # PAT con repo scope (Administration read+write)
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}   # PAT con scope "repo" (Administration read+write)
 
     steps:
       - name: Crear environments automáticamente desde nombres de jobs
         run: |
-          # =============================================
-          # CAMBIA SOLO ESTO (3 líneas)
-          # =============================================
+          # ┌─────────────────────────────────────────────┐
+          # │ CAMBIA SOLO ESTAS 3 LÍNEAS                  │
+          # └─────────────────────────────────────────────┘
           OWNER="jmorenocastillo"          # ej: acme-corp
           REPO="clonerepo"                    # ej: infra-azure
           APROBADOR="jmorenocastillo"            # usuario GitHub que será aprobador
-          # =============================================
+          # ┌─────────────────────────────────────────────┐
 
           # ID del aprobador
           USER_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
             "https://api.github.com/users/$APROBADOR" | jq -r .id)
 
-          echo "Detectando jobs en todos los workflows..."
+          echo "Buscando jobs en todos los workflows del repo..."
 
-          # Detectar todos los nombres de jobs del repo (corregido 100%)
-          JOB_NAMES=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            "/repos/$OWNER/$REPO/actions/workflows" \
-            --jq '.workflows[].path' | while read -r path; do
-              content=$(gh api \
-                -H "Accept: application/vnd.github+json" \
+          # Detectar todos los nombres de jobs (sin errores de base64 ni EOF)
+          JOB_NAMES=$(gh api -H "Accept: application/vnd.github+json" \
+            "/repos/$OWNER/$REPO/actions/workflows" --jq '.workflows[].path' | \
+            while IFS= read -r path; do
+              content=$(gh api -H "Accept: application/vnd.github+json" \
                 "/repos/$OWNER/$REPO/contents/$path" --jq '.content // empty')
               if [ -n "$content" ]; then
-                echo "$content" | base64 -d 2>/dev/null | yq eval '.jobs | keys | .[]' - 2>/dev/null || true
+                echo "$content" | base64 -d 2>/dev/null | \
+                  yq eval '.jobs | keys | .[]' - 2>/dev/null
               fi
             done | sort -u)
 
-          # Filtrar jobs que no queremos como environments
-          JOB_NAMES=$(echo "$JOB_NAMES" | grep -vE '^(setup|create|configure|detect|lint|test|ci|format|check)' || true)
+          # Excluir jobs que NO queremos como environments
+          JOB_NAMES=$(echo "$JOB_NAMES" | grep -vE '^(setup|create|configure|detect|lint|test|ci|check|format|setup-environments)' || true)
 
-          # Fallback
-          [ -z "$JOB_NAMES" ] && JOB_NAMES="dev pre pro"
-
-          echo "Environments detectados → se crearán/configurarán:"
-          echo "$JOB_NAMES" | sed 's/^/  → /'
-
-          # Crear cada environment
-          for ENV in $JOB_NAMES; do
-            echo "Configurando environment: $ENV"
-
-            # Payload seguro (sin problemas de EOF)
-            cat > payload.json <<EOF
-{
-  "wait_timer": 300,
-  "prevent_self_review": true,
-  "reviewers": [{"type": "User", "id": $USER_ID}],
-  "deployment_branch_policy": {
-    "protected_branches": false,
-    "custom_branch_policies": true,
-    "custom_branch_policies_details": [{"name": "main"}]
-  }
-}
-EOF
-
-            curl -X PUT \
-              -H "Authorization: token $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              -H "Content-Type: application/json" \
-              -d @payload.json \
-              "https://api.github.com/repos/$OWNER/$REPO/environments/$ENV" \
-              -s -o /dev/null && echo "OK $ENV creado/configurado" || echo "Error en $ENV"
-
-            rm -f payload.json
-          done
-
-          echo "¡Listo! Todos los environments están
+          # Fallback por
