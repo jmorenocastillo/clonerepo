@@ -1,8 +1,8 @@
-# .github/workflows/setup-environments-fully-dynamic.yml
-name: Setup Environments (100% dinámico y sin errores)
+# .github/workflows/setup-environments-dynamic.yml
+name: Setup Environments 100% Dinámico (sin errores)
 
 on:
-  workflow_dispatch   # Ejecuta una vez manualmente
+  workflow_dispatch
 
 permissions:
   contents: read
@@ -13,13 +13,13 @@ jobs:
   create:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}   # PAT con repo (Administration read+write)
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}   # PAT con repo scope
 
     steps:
-      - name: Crear environments automáticamente desde todos los jobs del repo
+      - name: Detectar jobs y crear environments automáticamente
         run: |
           # =============================================
-          # SOLO CAMBIA ESTAS 3 LÍNEAS
+          # CAMBIA SOLO ESTO (3 líneas)
           # =============================================
           OWNER="jmorenocastillo"          # ej: acme-corp
           REPO="clonerepo"                    # ej: infra-azure
@@ -31,56 +31,11 @@ jobs:
 
           echo "Detectando jobs en todos los workflows..."
 
-          # Obtener TODOS los nombres de jobs del repositorio (sin errores de base64)
           JOB_NAMES=$(gh api \
             -H "Accept: application/vnd.github+json" \
             "/repos/$OWNER/$REPO/actions/workflows" \
-            --jq '.workflows[].path' | while read path; do
-              # Obtener contenido del workflow
+            --jq '.workflows[].path' | while read -r path; do
               content=$(gh api \
                 -H "Accept: application/vnd.github+json" \
-                "/repos/$OWNER/$REPO/contents/$path" \
-                --jq '.content // empty')
-              
-              # Si tiene contenido en base64 → decodificarlo correctamente
-              if [ -n "$content" ]; then
-                echo "$content" | base64 -d | yq eval '.jobs | keys | .[]' -
-              fi
-            done | sort -u)
-
-          # Filtrar jobs que NO queremos como environments
-          JOB_NAMES=$(echo "$JOB_NAMES" | grep -vE '^(setup|create|configure|detect|lint|test|ci)' || true)
-
-          # Fallback por si no encuentra nada
-          [ -z "$JOB_NAMES" ] && JOB_NAMES="dev pre pro"
-
-          echo "Environments que se van a crear/configurar:"
-          echo "$JOB_NAMES" | sed 's/^/  → /'
-
-          # Crear/configurar cada environment
-          for ENV in $JOB_NAMES; do
-            echo "Configurando → $ENV"
-
-            PAYLOAD=$(cat <<EOF
-            {
-              "wait_timer": 300,
-              "prevent_self_review": true,
-              "reviewers": [{"type":"User","id":$USER_ID}],
-              "deployment_branch_policy": {
-                "protected_branches": false,
-                "custom_branch_policies": true,
-                "custom_branch_policies_details": [{ "name": "main" }]
-              }
-            }
-            EOF
-            )
-
-            curl -X PUT \
-              -H "Authorization: token $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              -d "$PAYLOAD" \
-              "https://api.github.com/repos/$OWNER/$REPO/environments/$ENV" \
-              -s -o /dev/null && echo "OK $ENV creado/configurado"
-          done
-
-          echo "¡Todo listo! Ya tienes todos los environments sincronizados con tus jobs."
+                "/repos/$OWNER/$REPO/contents/$path" --jq '.content // empty')
+              [ -n "$content" ] && echo "$content" | base64 -d | yq eval '.jobs | keys | .[]' -
