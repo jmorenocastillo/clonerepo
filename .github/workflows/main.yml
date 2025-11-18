@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Crear environments con aprobadores
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}   # <-- Crea este secret con un PAT (repo scope)
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           OWNER="jmorenocastillo"           # <-- Cambia aquí (ej: microsoft o tu-usuario)
           REPO="clonerepo"                     # <-- Cambia aquí
