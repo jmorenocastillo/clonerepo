@@ -1,14 +1,13 @@
 # .github/workflows/create-environments.yml
 name: Crear Environments automáticamente
 
-# Se ejecuta manualmente o cada vez que cambies el workflow que contiene los jobs
 on:
   workflow_dispatch:
   push:
     branches:
       - main
     paths:
-      - '.github/workflows/deploy.yml'   # ← si tu workflow se llama distinto, cámbialo aquí
+      - '.github/workflows/deploy.yml'  # Se ejecuta cuando cambies el deploy.yml
 
 permissions:
   contents: read
@@ -18,36 +17,51 @@ jobs:
   create:
     runs-on: ubuntu-latest
     steps:
-      - name: Crear environments = nombres de jobs
+      - name: Crear environments desde jobs
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}   # PAT con permiso repo → Administration read+write
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}  # PAT con repo → Administration read+write
         run: |
-          # =============================================
-          # CAMBIA SÓLO ESTAS 2 LÍNEAS
-          # =============================================
-          APROBADOR="jmorenocastillo"              # ← tu usuario de GitHub
-          WORKFLOW_FILE="deploy.yml"          # ← nombre exacto de tu workflow con los jobs
-          # =============================================
+          # ──────────────────────────
+          # CAMBIA SOLO ESTO (2 líneas)
+          # ──────────────────────────
+          APROBADOR="jmorenocastillo"             # Tu usuario de GitHub
+          WORKFLOW_FILE="deploy.yml"         # Nombre de tu archivo con jobs
+          # ──────────────────────────
 
+          REPO="${{ github.repository }}"
           USER_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
             https://api.github.com/users/$APROBADOR | jq -r .id)
 
-          # Lee el archivo del workflow y extrae los nombres de los jobs (una línea por job)
-          JOBS=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            "/repos/${{ github.repository }}/contents/.github/workflows/$WORKFLOW_FILE" \
-            --jq '.content' | base64 -d | grep -E '^[[:space:]]*[a-zA-Z0-9_-]+:' | sed 's/:.*$//' | tr -d ' ')
+          echo "=== DEBUG: ID del aprobador = $USER_ID"
 
-          echo "Jobs detectados → se crearán estos environments:"
-          echo "$JOBS" | sed 's/^/  → /'
+          # Intenta extraer jobs automáticamente del archivo
+          if [ -f ".github/workflows/$WORKFLOW_FILE" ]; then
+            # Usa yq para parsing preciso (instálalo si no está)
+            sudo snap install yq  # Solo si no está preinstalado
+            CONTENT=$(cat .github/workflows/$WORKFLOW_FILE)
+            JOBS=$(echo "$CONTENT" | yq eval '.jobs | keys | .[]' - 2>/dev/null || echo "")
 
+            echo "=== DEBUG: Jobs extraídos del archivo: $JOBS"
+          else
+            JOBS=""
+            echo "=== DEBUG: Archivo $WORKFLOW_FILE no encontrado, usando lista manual"
+          fi
+
+          # Si no extrae nada, usa lista manual (temporal, para tus 3 jobs)
+          if [ -z "$JOBS" ]; then
+            JOBS="dev pre pro"
+            echo "=== DEBUG: Usando lista manual: $JOBS"
+          fi
+
+          echo "=== DEBUG: Environments a crear: $JOBS"
+
+          # Crear cada environment
           for ENV in $JOBS; do
-            echo "Creando/configurando → $ENV"
+            echo "Creando → $ENV"
 
             curl -X PUT \
               -H "Authorization: token $GH_TOKEN" \
               -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${{ github.repository }}/environments/$ENV" \
               -H "Content-Type: application/json" \
               -d '{
                 "wait_timer": 300,
@@ -55,7 +69,10 @@ jobs:
                 "reviewers": [{"type":"User","id":'"$USER_ID"'}],
                 "deployment_branch_policy": {"protected_branches": true}
               }' \
-              -s && echo "OK → $ENV listo"
+              "https://api.github.com/repos/$REPO/environments/$ENV" \
+              -s -w "HTTP: %{http_code}\n"
+
+            echo "OK → $ENV listo (si HTTP 200/201)"
           done
 
-          echo "¡Terminado! Todos los environments están sincronizados con los jobs de $WORKFLOW_FILE"
+          echo "¡Setup completado! Ve a Settings → Environments para verificar."
