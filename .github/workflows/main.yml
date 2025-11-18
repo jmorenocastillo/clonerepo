@@ -15,17 +15,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          OWNER="jmorenocastillo"           # <-- Cambia aquí (ej: microsoft o tu-usuario)
-          REPO="clonerepo"                     # <-- Cambia aquí
-          USERNAME="jmorenocastillo"     # <-- Usuario GitHub que será aprobador
-          TEAM_SLUG=""     # <-- Slug del team (opcional, déjalo vacío si no usas team)
+          OWNER="jmorenocastillo"           
+          REPO="clonerepo"                     
+          USERNAME="jmorenocastillo"     
+          TEAM_SLUG=""     
 
-          # Lista de environments que quieres crear
           for ENV in dev staging production; do
             echo "Configurando environment: $ENV"
 
-            # Obtener ID del usuario
             USER_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
               https://api.github.com/users/$USERNAME | jq -r .id)
 
-            # Construir reviewers
