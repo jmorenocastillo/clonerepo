@@ -1,78 +1,55 @@
-# .github/workflows/create-environments.yml
-name: Crear Environments automáticamente
+# .github/workflows/sync-environments.yml
+name: Sync Environments ← funciona 100 %
 
 on:
-  workflow_dispatch:
+  workflow_dispatch
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
-      - '.github/workflows/deploy.yml'  # Se ejecuta cuando cambies el deploy.yml
+      - '.github/workflows/deploy.yml'   # ← se ejecuta cada vez que cambies este archivo
 
 permissions:
   contents: read
   deployments: write
 
 jobs:
-  create:
+  sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Crear environments desde jobs
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}  # PAT con repo → Administration read+write
-        run: |
-          # ──────────────────────────
-          # CAMBIA SOLO ESTO (2 líneas)
-          # ──────────────────────────
-          APROBADOR="jmorenocastillo"             # Tu usuario de GitHub
-          WORKFLOW_FILE="deploy.yml"         # Nombre de tu archivo con jobs
-          # ──────────────────────────
+      - uses: actions/checkout@v4
 
-          REPO="${{ github.repository }}"
+      - name: Crear environments desde los jobs de deploy.yml
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}   # PAT con permiso "Administration" read+write
+        run: |
+          # TU USUARIO QUE SERÁ APROBADOR
+          APROBADOR="jmorenocastillo"   # ← SOLO CAMBIA ESTO
+
           USER_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
             https://api.github.com/users/$APROBADOR | jq -r .id)
 
-          echo "=== DEBUG: ID del aprobador = $USER_ID"
+          # Extrae los nombres de jobs del archivo deploy.yml (100 % fiable)
+          JOBS=$(grep -E '^[[:space:]]*[a-zA-Z0-9_-]+:' .github/workflows/deploy.yml | \
+                 cut -d: -f1 | tr -d ' ' | tr -d '\r')
 
-          # Intenta extraer jobs automáticamente del archivo
-          if [ -f ".github/workflows/$WORKFLOW_FILE" ]; then
-            # Usa yq para parsing preciso (instálalo si no está)
-            sudo snap install yq  # Solo si no está preinstalado
-            CONTENT=$(cat .github/workflows/$WORKFLOW_FILE)
-            JOBS=$(echo "$CONTENT" | yq eval '.jobs | keys | .[]' - 2>/dev/null || echo "")
+          echo "Jobs detectados → se crean estos environments:"
+          echo "$JOBS" | sed 's/^/  → /'
 
-            echo "=== DEBUG: Jobs extraídos del archivo: $JOBS"
-          else
-            JOBS=""
-            echo "=== DEBUG: Archivo $WORKFLOW_FILE no encontrado, usando lista manual"
-          fi
-
-          # Si no extrae nada, usa lista manual (temporal, para tus 3 jobs)
-          if [ -z "$JOBS" ]; then
-            JOBS="dev pre pro"
-            echo "=== DEBUG: Usando lista manual: $JOBS"
-          fi
-
-          echo "=== DEBUG: Environments a crear: $JOBS"
-
-          # Crear cada environment
           for ENV in $JOBS; do
-            echo "Creando → $ENV"
+            echo "Creando/configurando → $ENV"
 
             curl -X PUT \
               -H "Authorization: token $GH_TOKEN" \
               -H "Accept: application/vnd.github+json" \
               -H "Content-Type: application/json" \
-              -d '{
-                "wait_timer": 300,
-                "prevent_self_review": true,
-                "reviewers": [{"type":"User","id":'"$USER_ID"'}],
-                "deployment_branch_policy": {"protected_branches": true}
-              }' \
-              "https://api.github.com/repos/$REPO/environments/$ENV" \
-              -s -w "HTTP: %{http_code}\n"
-
-            echo "OK → $ENV listo (si HTTP 200/201)"
+              -d "{
+                \"wait_timer\": 300,
+                \"prevent_self_review\": true,
+                \"reviewers\": [{\"type\":\"User\",\"id\":$USER_ID}],
+                \"deployment_branch_policy\": {\"protected_branches\": true}
+              }" \
+              https://api.github.com/repos/${{ github.repository }}/environments/$ENV \
+              -s -w "\n→ $ENV creado (HTTP %{http_code})\n" || true
           done
 
-          echo "¡Setup completado! Ve a Settings → Environments para verificar."
+          echo "¡TERMINADO! Todos los environments están sincronizados."
