@@ -13,16 +13,53 @@ jobs:
     steps:
       - name: Crear environments con aprobadores
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}   # <-- Crea este secret con un PAT (repo scope)
         run: |
-          OWNER="jmorenocastillo"           
-          REPO="clonerepo"                     
-          USERNAME="jmorenocastillo"     
-          TEAM_SLUG=""     
+          OWNER="jmorenocastillo"           # <-- Cambia aquí (ej: microsoft o tu-usuario)
+          REPO="clonerepo"                     # <-- Cambia aquí
+          USERNAME="jmorenocastillo"     # <-- Usuario GitHub que será aprobador
+          TEAM_SLUG=""     # <-- Slug del team (opcional, déjalo vacío si no usas team)
 
+          # Lista de environments que quieres crear
           for ENV in dev staging production; do
             echo "Configurando environment: $ENV"
 
+            # Obtener ID del usuario
             USER_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
-            https://api.github.com/users/$USERNAME | jq -r .id)
+              https://api.github.com/users/$USERNAME | jq -r .id)
 
+            # Construir reviewers (solo usuario o usuario + team)
+            if [ -n "$TEAM_SLUG" ] && [ "$TEAM_SLUG" != "equipo-aprobadores" ]; then
+              TEAM_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
+                https://api.github.com/orgs/$OWNER/teams/$TEAM_SLUG | jq -r .id)
+              REVIEWERS='[{"type":"User","id":'"$USER_ID"'},{"type":"Team","id":'"$TEAM_ID"'}]'
+            else
+              REVIEWERS='[{"type":"User","id":'"$USER_ID"'}]'
+            fi
+
+            # Payload final (todo en una línea para evitar errores de bash)
+            PAYLOAD='{
+              "wait_timer": 300,
+              "prevent_self_review": true,
+              "reviewers": '"$REVIEWERS"',
+              "deployment_branch_policy": {
+                "protected_branches": true,
+                "custom_branch_policies": false
+              }
+            }'
+
+            # Crear/actualizar environment
+            http_code=$(curl -s -o response.json -w "%{http_code}" \
+              -X PUT \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -d "$PAYLOAD" \
+              https://api.github.com/repos/$OWNER/$REPO/environments/$ENV)
+
+            if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
+              echo "Environment $ENV creado/configurado correctamente"
+            else
+              echo "Error $http_code en $ENV"
+              cat response.json
+            fi
+          done
