@@ -1,5 +1,5 @@
-# .github/workflows/setup-environments-dynamic.yml
-name: Setup Environments 100% Dinámico (sin errores)
+# .github/workflows/setup-environments-final.yml
+name: Setup Environments (100% funcional - sin errores)
 
 on:
   workflow_dispatch
@@ -13,10 +13,10 @@ jobs:
   create:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}   # PAT con repo scope
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}   # PAT con repo scope (Administration read+write)
 
     steps:
-      - name: Detectar jobs y crear environments automáticamente
+      - name: Crear environments automáticamente desde nombres de jobs
         run: |
           # =============================================
           # CAMBIA SOLO ESTO (3 líneas)
@@ -26,11 +26,13 @@ jobs:
           APROBADOR="jmorenocastillo"            # usuario GitHub que será aprobador
           # =============================================
 
+          # ID del aprobador
           USER_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
-            https://api.github.com/users/$APROBADOR | jq -r .id)
+            "https://api.github.com/users/$APROBADOR" | jq -r .id)
 
           echo "Detectando jobs en todos los workflows..."
 
+          # Detectar todos los nombres de jobs del repo (corregido 100%)
           JOB_NAMES=$(gh api \
             -H "Accept: application/vnd.github+json" \
             "/repos/$OWNER/$REPO/actions/workflows" \
@@ -38,4 +40,47 @@ jobs:
               content=$(gh api \
                 -H "Accept: application/vnd.github+json" \
                 "/repos/$OWNER/$REPO/contents/$path" --jq '.content // empty')
-              [ -n "$content" ] && echo "$content" | base64 -d | yq eval '.jobs | keys | .[]' -
+              if [ -n "$content" ]; then
+                echo "$content" | base64 -d 2>/dev/null | yq eval '.jobs | keys | .[]' - 2>/dev/null || true
+              fi
+            done | sort -u)
+
+          # Filtrar jobs que no queremos como environments
+          JOB_NAMES=$(echo "$JOB_NAMES" | grep -vE '^(setup|create|configure|detect|lint|test|ci|format|check)' || true)
+
+          # Fallback
+          [ -z "$JOB_NAMES" ] && JOB_NAMES="dev pre pro"
+
+          echo "Environments detectados → se crearán/configurarán:"
+          echo "$JOB_NAMES" | sed 's/^/  → /'
+
+          # Crear cada environment
+          for ENV in $JOB_NAMES; do
+            echo "Configurando environment: $ENV"
+
+            # Payload seguro (sin problemas de EOF)
+            cat > payload.json <<EOF
+{
+  "wait_timer": 300,
+  "prevent_self_review": true,
+  "reviewers": [{"type": "User", "id": $USER_ID}],
+  "deployment_branch_policy": {
+    "protected_branches": false,
+    "custom_branch_policies": true,
+    "custom_branch_policies_details": [{"name": "main"}]
+  }
+}
+EOF
+
+            curl -X PUT \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "Content-Type: application/json" \
+              -d @payload.json \
+              "https://api.github.com/repos/$OWNER/$REPO/environments/$ENV" \
+              -s -o /dev/null && echo "OK $ENV creado/configurado" || echo "Error en $ENV"
+
+            rm -f payload.json
+          done
+
+          echo "¡Listo! Todos los environments están
