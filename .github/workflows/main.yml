@@ -1,37 +1,31 @@
-name: Main con nombre dinámico
+# .github/workflows/setup-environments.yml
+name: Setup Environments + Aprobadores
 
-on: [push]
+on:
+  workflow_dispatch:   # Ejecuta manualmente una vez
 
 jobs:
-  # Paso 1: Generar nombre
-  prepare-job1:
+  create-envs:
     runs-on: ubuntu-latest
-    outputs:
-      job_name: ${{ steps.set.outputs.job_name }}
+    permissions:
+      contents: read
+
     steps:
-      - name: Set name
-        id: set
-        run: echo "job_name=job1" >> $GITHUB_OUTPUT
+      - name: Crear environments con aprobadores
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}   # <-- Crea este secret con un PAT (repo scope)
+        run: |
+          OWNER="jmorenocastillo"           # <-- Cambia aquí (ej: microsoft o tu-usuario)
+          REPO="clonerepo"                     # <-- Cambia aquí
+          USERNAME="jmorenocastillo"     # <-- Usuario GitHub que será aprobador
+          TEAM_SLUG=""     # <-- Slug del team (opcional, déjalo vacío si no usas team)
 
-  # Paso 2: Llamar reusable
-  call-job1:
-    needs: prepare-job1
-    uses: ./.github/workflows/reusable.yml
-    with:
-      caller_job: ${{ needs.prepare-job1.outputs.job_name }}
+          # Lista de environments que quieres crear
+          for ENV in dev staging production; do
+            echo "Configurando environment: $ENV"
 
-  # Repite para job2, job3...
-  prepare-job2:
-    needs: call-job1
-    runs-on: ubuntu-latest
-    outputs:
-      job_name: ${{ steps.set.outputs.job_name }}
-    steps:
-      - id: set
-        run: echo "job_name=job2" >> $GITHUB_OUTPUT
+            # Obtener ID del usuario
+            USER_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
+              https://api.github.com/users/$USERNAME | jq -r .id)
 
-  call-job2:
-    needs: prepare-job2
-    uses: ./.github/workflows/reusable.yml
-    with:
-      caller_job: ${{ needs.prepare-job2.outputs.job_name }}
+            # Construir reviewers
