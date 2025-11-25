@@ -1,0 +1,11 @@
+{
+  "owner": "jmorenocastillo",
+  "repository": "clonerepo",
+  "approver_username": "jmorenocastillo",
+  "team_slug": "",
+  "environments": [
+    "dev",
+    "staging",
+    "production"
+  ]
+}
