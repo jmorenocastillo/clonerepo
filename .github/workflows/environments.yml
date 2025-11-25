@@ -19,7 +19,7 @@ jobs:
       - name: Crear environments desde configuración
         # Usamos el token que GitHub ya nos da → siempre funciona
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           set -euo pipefail
 
