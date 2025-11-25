@@ -14,54 +14,68 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configurar environments desde JSON
+      - name: Configurar environments desde JSON (con debug total)
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          set -euo pipefail  # Esto hace que el script muera en cualquier error y lo veamos
+
+          echo "=== PASO 1: Verificamos que el archivo existe ==="
           CONFIG_FILE=".github/config/environments-config.json"
+          ls -la .github/config/ || echo "No existe la carpeta .github/config/"
+          cat "$CONFIG_FILE" && echo "Archivo leído correctamente" || (echo "No se pudo leer $CONFIG_FILE" && exit 1)
 
-          if [ ! -f "$CONFIG_FILE" ]; then
-            echo "Error: No se encuentra $CONFIG_FILE"
-            exit 1
-          fi
+          echo ""
+          echo "=== PASO 2: Instalamos jq si falta (por si acaso) ==="
+          jq --version || sudo apt-get update && sudo apt-get install -y jq
 
-          # Leer configuración
+          echo ""
+          echo "=== PASO 3: Leemos configuración con jq ==="
           OWNER=$(jq -r '.owner' "$CONFIG_FILE")
           REPO=$(jq -r '.repository' "$CONFIG_FILE")
           USERNAME=$(jq -r '.approver_username' "$CONFIG_FILE")
           TEAM_SLUG=$(jq -r '.team_slug // empty' "$CONFIG_FILE")
+          echo "Owner:          $OWNER"
+          echo "Repository:     $REPO"
+          echo "Approver user:  $USERNAME"
+          echo "Team slug:      '$TEAM_SLUG'"
+
+          echo ""
+          echo "=== PASO 4: Leemos la lista de environments ==="
           mapfile -t ENVIRONMENTS < <(jq -r '.environments[]' "$CONFIG_FILE")
+          echo "Encontrados ${#ENVIRONMENTS[@]} environments:"
+          printf '  - %s\n' "${ENVIRONMENTS[@]}"
 
-          echo "Owner: $OWNER"
-          echo "Repo: $REPO"
-          echo "Aprobador: $USERNAME"
-          [ -n "$TEAM_SLUG" ] && echo "Team: $TEAM_SLUG"
-          echo "Environments: ${ENVIRONMENTS[*]}"
+          if [ ${#ENVIRONMENTS[@]} -eq 0 ]; then
+            echo "Error: la lista de environments está vacía"
+            exit 1
+          fi
 
-          # ID del usuario aprobador
-          USER_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
-            "https://api.github.com/users/$USERNAME" | jq -r '.id')
+          echo ""
+          echo "=== PASO 5: Obtenemos ID del usuario aprobador ==="
+          USER_RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            "https://api.github.com/users/$USERNAME")
+          echo "Respuesta API usuario:"
+          echo "$USER_RESPONSE" | jq .
+          USER_ID=$(echo "$USER_RESPONSE" | jq -r '.id')
+          echo "USER_ID = $USER_ID"
+          [ "$USER_ID" = "null" ] || [ -z "$USER_ID" ] && echo "Error: usuario no encontrado o token sin permiso" && exit 1
 
-          [[ "$USER_ID" == "null" || -z "$USER_ID" ]] && echo "Error: usuario $USERNAME no encontrado" && exit 1
-
-          # Construcción segura de reviewers (sin comillas conflictivas)
+          # El resto ya funciona (lo dejamos igual pero con más echo)
           if [ -n "$TEAM_SLUG" ]; then
             TEAM_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
               "https://api.github.com/orgs/$OWNER/teams/$TEAM_SLUG" | jq -r '.id')
-            if [[ "$TEAM_ID" != "null" ]]; then
-              REVIEWERS=$(jq -n \
-                --argjson u "$USER_ID" \
-                --argjson t "$TEAM_ID" \
+            if [ "$TEAM_ID" != "null" ]; then
+              REVIEWERS=$(jq -n --argjson u "$USER_ID" --argjson t "$TEAM_ID" \
                 '[{"type":"User","id":$u},{"type":"Team","id":$t}]')
             else
-              echo "Team $TEAM_SLUG no encontrado → solo usuario"
+              echo "Team no encontrado → solo usuario"
               REVIEWERS=$(jq -n --argjson u "$USER_ID" '[{"type":"User","id":$u}]')
             fi
           else
             REVIEWERS=$(jq -n --argjson u "$USER_ID" '[{"type":"User","id":$u}]')
           fi
 
-          # Payload usando heredoc (la forma más segura en Bash)
           read -r -d '' PAYLOAD <<EOF
           {
             "wait_timer": 300,
@@ -69,28 +83,22 @@ jobs:
             "reviewers": $REVIEWERS,
             "deployment_branch_policy": {
               "protected_branches": true,
-              "custom_branch_policy": false
+              "custom_branch_policies": false
             }
           }
           EOF
 
-          # Crear cada environment
+          echo ""
+          echo "=== PAYLOAD que se va a enviar ==="
+          echo "$PAYLOAD" | jq .
+
           for ENV in "${ENVIRONMENTS[@]}"; do
             echo ""
-            echo "Configurando environment: $ENV"
-
-            HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" \
-              -X PUT \
+            echo "Configurando → $ENV"
+            curl -i -X PUT \
               -H "Authorization: token $GH_TOKEN" \
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               -d "$PAYLOAD" \
-              "https://api.github.com/repos/$OWNER/$REPO/environments/$ENV")
-
-            if [[ "$HTTP_CODE" == 200 || "$HTTP_CODE" == 201 ]]; then
-              echo "$ENV configurado correctamente"
-            else
-              echo "Error $HTTP_CODE al crear $ENV"
-              cat response.json
-            fi
+              "https://api.github.com/repos/$OWNER/$REPO/environments/$ENV"
           done
