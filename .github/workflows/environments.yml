@@ -8,21 +8,20 @@ jobs:
   create-envs:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write        # Necesario para crear environments
+      deployments: write     # También necesario
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Crear environments desde JSON
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ github.token }}    # ← Esta es la clave
         run: |
           set -euo pipefail
 
           CONFIG_FILE=".github/config/environments-config.json"
 
-          # Lectura de configuración
           OWNER=$(jq -r '.owner' "$CONFIG_FILE")
           REPO=$(jq -r '.repository' "$CONFIG_FILE")
           USERNAME=$(jq -r '.approver_username' "$CONFIG_FILE")
@@ -33,16 +32,14 @@ jobs:
           echo "Aprobador: $USERNAME"
           echo "Environments: ${ENVIRONMENTS[*]}"
 
-          # ID del usuario aprobador
           USER_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
             "https://api.github.com/users/$USERNAME" | jq -r '.id')
 
           if [[ "$USER_ID" == "null" || -z "$USER_ID" ]]; then
-            echo "Error: no se pudo obtener el ID del usuario $USERNAME"
+            echo "Error obteniendo ID del usuario"
             exit 1
           fi
 
-          # Construir reviewers con jq (seguro y limpio)
           if [[ -n "$TEAM_SLUG" ]]; then
             TEAM_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
               "https://api.github.com/orgs/$OWNER/teams/$TEAM_SLUG" | jq -r '.id')
@@ -50,14 +47,13 @@ jobs:
               REVIEWERS=$(jq -n --argjson u "$USER_ID" --argjson t "$TEAM_ID" \
                 '[{"type":"User","id":$u},{"type":"Team","id":$t}]')
             else
-              echo "Team $TEAM_SLUG no encontrado → solo usuario"
+              echo "Team no encontrado → solo usuario"
               REVIEWERS=$(jq -n --argjson u "$USER_ID" '[{"type":"User","id":$u}]')
             fi
           else
             REVIEWERS=$(jq -n --argjson u "$USER_ID" '[{"type":"User","id":$u}]')
           fi
 
-          # Payload con heredoc (nunca más problemas de comillas)
           read -r -d '' PAYLOAD <<EOF
           {
             "wait_timer": 300,
@@ -70,25 +66,23 @@ jobs:
           }
           EOF
 
-          # Crear cada environment
           for ENV in "${ENVIRONMENTS[@]}"; do
             echo ""
-            echo "Creando/configurando environment → $ENV"
-            HTTP_CODE=$(curl -s -o /tmp/response.json -w "%{http_code}" \
-              -X PUT \
-              -H "Authorization: token $GH_TOKEN" \
+            echo "Configurando → $ENV"
+            HTTP_CODE=$(curl -s -o /tmp/r.json -w "%{http_code}" \
+              -X PUT -H "Authorization: token $GH_TOKEN" \
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               -d "$PAYLOAD" \
               "https://api.github.com/repos/$OWNER/$REPO/environments/$ENV")
 
             if [[ "$HTTP_CODE" == 200 || "$HTTP_CODE" == 201 ]]; then
-              echo "$ENV → OK (código $HTTP_CODE)"
+              echo "$ENV → creado/actualizado correctamente"
             else
-              echo "$ENV → ERROR $HTTP_CODE"
-              cat /tmp/response.json
+              echo "$ENV → error $HTTP_CODE"
+              cat /tmp/r.json
             fi
           done
 
           echo ""
-          echo "¡Todo terminado!"
+          echo "¡Todos los environments configurados!"
