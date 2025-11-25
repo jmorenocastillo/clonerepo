@@ -2,7 +2,7 @@
 name: Setup Environments + Aprobadores
 
 on:
-  workflow_dispatch:   # Puedes ejecutarlo manualmente cuando cambies el JSON
+  workflow_dispatch:
 
 jobs:
   create-envs:
@@ -14,71 +14,72 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Leer configuración y crear environments
+      - name: Configurar environments desde JSON
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}  # PAT con repo + read:org (si usas teams)
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           CONFIG_FILE=".github/config/environments-config.json"
 
-          # Validar que el archivo existe
           if [ ! -f "$CONFIG_FILE" ]; then
-            echo "Error: No se encontró el archivo de configuración $CONFIG_FILE"
+            echo "Error: No se encuentra $CONFIG_FILE"
             exit 1
           fi
 
-          # Leer valores del JSON usando jq
+          # Leer configuración
           OWNER=$(jq -r '.owner' "$CONFIG_FILE")
           REPO=$(jq -r '.repository' "$CONFIG_FILE")
           USERNAME=$(jq -r '.approver_username' "$CONFIG_FILE")
           TEAM_SLUG=$(jq -r '.team_slug // empty' "$CONFIG_FILE")
-          ENVIRONMENTS=($(jq -r '.environments[]' "$CONFIG_FILE"))
+          mapfile -t ENVIRONMENTS < <(jq -r '.environments[]' "$CONFIG_FILE")
 
-          echo "Owner: $OWNER
+          echo "Owner: $OWNER"
           echo "Repo: $REPO"
           echo "Aprobador: $USERNAME"
-          [ -n "$TEAM_SLUG" ] && echo "Equipo aprobador: $TEAM_SLUG"
-          echo "Environments a crear: ${ENVIRONMENTS[@]}"
+          [ -n "$TEAM_SLUG" ] && echo "Team: $TEAM_SLUG"
+          echo "Environments: ${ENVIRONMENTS[*]}"
 
-          # Obtener ID del usuario aprobador
+          # ID del usuario aprobador
           USER_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
             "https://api.github.com/users/$USERNAME" | jq -r '.id')
 
-          if [ "$USER_ID" = "null" ] || [ -z "$USER_ID" ]; then
-            echo "Error: No se pudo obtener el ID del usuario $USERNAME"
-            exit 1
-          fi
+          [[ "$USER_ID" == "null" || -z "$USER_ID" ]] && echo "Error: usuario $USERNAME no encontrado" && exit 1
 
-          # Construir reviewers (usuario + equipo opcional)
+          # Construcción segura de reviewers (sin comillas conflictivas)
           if [ -n "$TEAM_SLUG" ]; then
             TEAM_ID=$(curl -s -H "Authorization: token $GH_TOKEN" \
               "https://api.github.com/orgs/$OWNER/teams/$TEAM_SLUG" | jq -r '.id')
-            if [ "$TEAM_ID" != "null" ]; then
-              REVIEWERS='[{"type":"User","id":'"$USER_ID"'},{"type":"Team","id":'"$TEAM_ID"'}]'
+            if [[ "$TEAM_ID" != "null" ]]; then
+              REVIEWERS=$(jq -n \
+                --argjson u "$USER_ID" \
+                --argjson t "$TEAM_ID" \
+                '[{"type":"User","id":$u},{"type":"Team","id":$t}]')
             else
-              echo "Advertencia: Equipo $TEAM_SLUG no encontrado, solo se usará el usuario"
-              REVIEWERS='[{"type":"User","id":'"$USER_ID"'}]'
+              echo "Team $TEAM_SLUG no encontrado → solo usuario"
+              REVIEWERS=$(jq -n --argjson u "$USER_ID" '[{"type":"User","id":$u}]')
             fi
           else
-            REVIEWERS='[{"type":"User","id":'"$USER_ID"'}]'
+            REVIEWERS=$(jq -n --argjson u "$USER_ID" '[{"type":"User","id":$u}]')
           fi
 
-          # Payload común
-          PAYLOAD='{
+          # Payload usando heredoc (la forma más segura en Bash)
+          read -r -d '' PAYLOAD <<EOF
+          {
             "wait_timer": 300,
             "prevent_self_review": true,
-            "reviewers": '"$REVIEWERS"',
+            "reviewers": $REVIEWERS,
             "deployment_branch_policy": {
               "protected_branches": true,
-              "custom_branch_policies": false
+              "custom_branch_policy": false
             }
-          }'
+          }
+          EOF
 
           # Crear cada environment
           for ENV in "${ENVIRONMENTS[@]}"; do
             echo ""
             echo "Configurando environment: $ENV"
 
-            http_code=$(curl -s -o response.json -w "%{http_code}" \
+            HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" \
               -X PUT \
               -H "Authorization: token $GH_TOKEN" \
               -H "Accept: application/vnd.github+json" \
@@ -86,10 +87,10 @@ jobs:
               -d "$PAYLOAD" \
               "https://api.github.com/repos/$OWNER/$REPO/environments/$ENV")
 
-            if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
-              echo "Environment $ENV configurado correctamente"
+            if [[ "$HTTP_CODE" == 200 || "$HTTP_CODE" == 201 ]]; then
+              echo "$ENV configurado correctamente"
             else
-              echo "Error $http_code en $ENV"
+              echo "Error $HTTP_CODE al crear $ENV"
               cat response.json
             fi
           done
