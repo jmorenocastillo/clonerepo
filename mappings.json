@@ -1,0 +1,12 @@
+{
+  "locations": {
+    "brazilsouth": "zb1",
+    "westeurope": "weu"
+  },
+  "components": {
+    "log_analytics": "lwk",
+    "eventhub": "aeh",
+    "key_vault": "kv",
+    "storage_account": "sta"
+  }
+}

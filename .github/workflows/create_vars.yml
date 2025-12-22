@@ -1,0 +1,28 @@
+name: Deploy Terraform
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Entorno (ej. d1, p1)'
+        required: true
+      location:
+        description: 'Location Azure (ej. westeurope)'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      REPO_NAME: ${{ github.repository }}
+      ENVIRONMENT: ${{ inputs.environment || 'd1' }}
+      LOCATION: ${{ inputs.location || 'westeurope' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generar tfvars dinámicos
+        run: python generate_tfvars.py
+

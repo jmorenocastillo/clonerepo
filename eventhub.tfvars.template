@@ -1,0 +1,6 @@
+resource_name = "{{resource_name}}"
+location      = "{{location}}"
+# Otros valores fijos o dinámicos
+tags = {
+  environment = "{{environment}}"
+}
