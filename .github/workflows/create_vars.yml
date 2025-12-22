@@ -1,4 +1,4 @@
-name: Deploy Terraform
+name: Generar tfvars y subir como artefactos
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
         required: true
 
 jobs:
-  deploy:
+  generate_tfvars:
     runs-on: ubuntu-latest
     env:
       REPO_NAME: ${{ github.repository }}
@@ -26,3 +26,13 @@ jobs:
       - name: Generar tfvars dinámicos
         run: python generate_tfvars.py
 
+      - name: Subir tfvars generados como artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated_tfvars
+          path: generated_*.tfvars  # Sube todos los archivos que empiecen por "generated_"
+          retention-days: 30        # Opcional: cuántos días mantener los artefactos
+
+      # Opcional: Si quieres ver qué se generó (para debug)
+      - name: Listar archivos generados
+        run: ls -la generated_*.tfvars
